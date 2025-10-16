@@ -1,31 +1,55 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { AnomalyResult } from "@/lib/mlDetectionEngine";
 import { TrendingUp } from "lucide-react";
 
-const hourlyData = [
-  { hour: "00:00", anomalies: 12 },
-  { hour: "04:00", anomalies: 8 },
-  { hour: "08:00", anomalies: 24 },
-  { hour: "12:00", anomalies: 35 },
-  { hour: "16:00", anomalies: 28 },
-  { hour: "20:00", anomalies: 19 }
-];
+interface AnomalyChartProps {
+  anomalies: AnomalyResult[];
+}
 
-const AnomalyChart = () => {
+export const AnomalyChart = ({ anomalies }: AnomalyChartProps) => {
+  // Group anomalies by time intervals
+  const generateChartData = () => {
+    const intervals = 6;
+    const data = [];
+    const totalCount = anomalies.length;
+    const itemsPerInterval = Math.ceil(totalCount / intervals);
+
+    for (let i = 0; i < intervals; i++) {
+      const start = i * itemsPerInterval;
+      const end = Math.min((i + 1) * itemsPerInterval, totalCount);
+      const slice = anomalies.slice(start, end);
+      
+      const anomalyCount = slice.filter(a => a.isAnomaly).length;
+      const normalCount = slice.length - anomalyCount;
+      
+      data.push({
+        time: `T${i * 4}:00`,
+        anomalies: anomalyCount,
+        normal: normalCount
+      });
+    }
+    
+    return data;
+  };
+
+  const data = generateChartData();
+
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-card via-card to-card/95 border-primary/20 shadow-card">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <CardTitle>Anomaly Trends (24h)</CardTitle>
-        </div>
+        <CardTitle className="text-xl flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          Detection Trends
+        </CardTitle>
+        <CardDescription>Real-time analysis of transaction patterns</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={hourlyData}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="hour" 
+              dataKey="time" 
               stroke="hsl(var(--muted-foreground))"
               style={{ fontSize: '12px' }}
             />
@@ -37,16 +61,25 @@ const AnomalyChart = () => {
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                color: 'hsl(var(--foreground))'
+                borderRadius: '8px'
               }}
             />
+            <Legend />
             <Line 
               type="monotone" 
               dataKey="anomalies" 
+              stroke="hsl(var(--destructive))" 
+              strokeWidth={2}
+              dot={{ fill: 'hsl(var(--destructive))' }}
+              name="Anomalies"
+            />
+            <Line 
+              type="monotone" 
+              dataKey="normal" 
               stroke="hsl(var(--primary))" 
-              strokeWidth={3}
-              dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+              strokeWidth={2}
+              dot={{ fill: 'hsl(var(--primary))' }}
+              name="Normal"
             />
           </LineChart>
         </ResponsiveContainer>
@@ -54,5 +87,3 @@ const AnomalyChart = () => {
     </Card>
   );
 };
-
-export default AnomalyChart;

@@ -1,123 +1,108 @@
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AnomalyResult } from "@/lib/mlDetectionEngine";
+import { AlertTriangle, Clock } from "lucide-react";
 
-interface Anomaly {
-  id: string;
-  hash: string;
-  timestamp: string;
-  amount: string;
-  riskLevel: "high" | "medium" | "low";
-  type: string;
-  confidence: number;
+interface AnomalyTableProps {
+  anomalies: AnomalyResult[];
 }
 
-const mockAnomalies: Anomaly[] = [
-  {
-    id: "1",
-    hash: "0x7f8a...3d4e",
-    timestamp: "2025-10-16 14:32:10",
-    amount: "125.4 ETH",
-    riskLevel: "high",
-    type: "Unusual Volume",
-    confidence: 94
-  },
-  {
-    id: "2",
-    hash: "0x9b2c...7a1f",
-    timestamp: "2025-10-16 14:28:45",
-    amount: "0.03 BTC",
-    riskLevel: "medium",
-    type: "Suspicious Pattern",
-    confidence: 76
-  },
-  {
-    id: "3",
-    hash: "0x4e5f...9c2b",
-    timestamp: "2025-10-16 14:15:22",
-    amount: "450.2 USDT",
-    riskLevel: "high",
-    type: "Mixer Activity",
-    confidence: 89
-  },
-  {
-    id: "4",
-    hash: "0x1a3d...6f8e",
-    timestamp: "2025-10-16 13:59:33",
-    amount: "23.7 ETH",
-    riskLevel: "low",
-    type: "Velocity Check",
-    confidence: 62
-  },
-  {
-    id: "5",
-    hash: "0x8c7b...4d2a",
-    timestamp: "2025-10-16 13:47:18",
-    amount: "1,250 USDC",
-    riskLevel: "medium",
-    type: "Geographic Alert",
-    confidence: 71
-  }
-];
+export const AnomalyTable = ({ anomalies }: AnomalyTableProps) => {
+  const anomalyList = anomalies
+    .filter(a => a.isAnomaly)
+    .map((anomaly, idx) => ({
+      id: idx + 1,
+      hash: `0x${Math.random().toString(16).substr(2, 32)}`,
+      timestamp: anomaly.timestamp.toLocaleString(),
+      amount: `${(Math.random() * 20 + 1).toFixed(2)} BTC`,
+      type: anomaly.attackType || "Unknown",
+      confidence: Math.round(anomaly.confidence),
+      risk: anomaly.confidence > 75 ? "high" : anomaly.confidence > 50 ? "medium" : "low"
+    }));
 
-const AnomalyTable = () => {
-  const getRiskBadge = (level: string) => {
-    const variants: Record<string, "destructive" | "default" | "secondary"> = {
-      high: "destructive",
-      medium: "default",
-      low: "secondary"
-    };
-    return variants[level] || "default";
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "high":
+        return "destructive";
+      case "medium":
+        return "warning";
+      case "low":
+        return "secondary";
+      default:
+        return "default";
+    }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-primary" />
-            <CardTitle>Recent Anomalies</CardTitle>
+  const getAttackIcon = (type: string) => {
+    if (type.includes("DDoS")) return "🔥";
+    if (type.includes("Double")) return "⚡";
+    if (type.includes("51%")) return "🛡️";
+    return "⚠️";
+  };
+
+  if (anomalyList.length === 0) {
+    return (
+      <Card className="bg-gradient-to-br from-card via-card to-card/95 border-primary/20 shadow-card">
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-primary" />
+            Detected Anomalies
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No anomalies detected. System running normally.</p>
           </div>
-          <Badge variant="outline" className="font-mono">
-            Live
-          </Badge>
-        </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-gradient-to-br from-card via-card to-card/95 border-primary/20 shadow-card">
+      <CardHeader>
+        <CardTitle className="text-xl flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-destructive animate-pulse" />
+          Detected Anomalies ({anomalyList.length})
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border border-border overflow-hidden">
+        <div className="rounded-md border border-border/50 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-muted/50">
                 <TableHead>Transaction Hash</TableHead>
-                <TableHead>Timestamp</TableHead>
+                <TableHead className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Timestamp
+                </TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Attack Type</TableHead>
                 <TableHead>Confidence</TableHead>
                 <TableHead>Risk Level</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockAnomalies.map((anomaly) => (
-                <TableRow key={anomaly.id} className="hover:bg-muted/50">
-                  <TableCell className="font-mono text-sm">{anomaly.hash}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{anomaly.timestamp}</TableCell>
-                  <TableCell className="font-semibold">{anomaly.amount}</TableCell>
-                  <TableCell>{anomaly.type}</TableCell>
+              {anomalyList.slice(0, 10).map((anomaly) => (
+                <TableRow key={anomaly.id} className="hover:bg-muted/30 animate-fade-in">
+                  <TableCell className="font-mono text-xs">{anomaly.hash}</TableCell>
+                  <TableCell className="text-sm">{anomaly.timestamp}</TableCell>
+                  <TableCell className="font-semibold text-primary">{anomaly.amount}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all"
-                          style={{ width: `${anomaly.confidence}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{anomaly.confidence}%</span>
-                    </div>
+                    <span className="flex items-center gap-1">
+                      {getAttackIcon(anomaly.type)}
+                      {anomaly.type}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getRiskBadge(anomaly.riskLevel)} className="capitalize">
-                      {anomaly.riskLevel}
+                    <Badge variant="outline" className="font-mono">
+                      {anomaly.confidence}%
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getRiskColor(anomaly.risk) as any}>
+                      {anomaly.risk.toUpperCase()}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -125,9 +110,12 @@ const AnomalyTable = () => {
             </TableBody>
           </Table>
         </div>
+        {anomalyList.length > 10 && (
+          <p className="text-sm text-muted-foreground text-center mt-4">
+            Showing 10 of {anomalyList.length} anomalies
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 };
-
-export default AnomalyTable;
