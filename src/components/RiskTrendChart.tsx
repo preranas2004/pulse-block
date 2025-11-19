@@ -1,16 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { AnomalyResult } from "@/lib/mlDetectionEngine";
-import { TrendingUp } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
-interface AnomalyChartProps {
+interface RiskTrendChartProps {
   anomalies: AnomalyResult[];
 }
 
-export const AnomalyChart = ({ anomalies }: AnomalyChartProps) => {
-  // Group anomalies by time intervals
-  const generateChartData = () => {
-    const intervals = 6;
+export const RiskTrendChart = ({ anomalies }: RiskTrendChartProps) => {
+  const generateRiskData = () => {
+    const intervals = 8;
     const data = [];
     const totalCount = anomalies.length;
     const itemsPerInterval = Math.ceil(totalCount / intervals);
@@ -20,43 +19,35 @@ export const AnomalyChart = ({ anomalies }: AnomalyChartProps) => {
       const end = Math.min((i + 1) * itemsPerInterval, totalCount);
       const slice = anomalies.slice(start, end);
       
-      const anomalyCount = slice.filter(a => a.isAnomaly).length;
-      const normalCount = slice.length - anomalyCount;
+      const highRisk = slice.filter(a => a.isAnomaly && a.confidence > 75).length;
+      const mediumRisk = slice.filter(a => a.isAnomaly && a.confidence > 50 && a.confidence <= 75).length;
+      const lowRisk = slice.filter(a => a.isAnomaly && a.confidence <= 50).length;
       
       data.push({
-        time: `T${i * 4}:00`,
-        anomalies: anomalyCount,
-        normal: normalCount
+        time: `T${i * 3}:00`,
+        high: highRisk,
+        medium: mediumRisk,
+        low: lowRisk
       });
     }
     
     return data;
   };
 
-  const data = generateChartData();
+  const data = generateRiskData();
 
   return (
-    <Card className="bg-gradient-to-br from-card via-card to-card/95 border-primary/20 shadow-card">
+    <Card className="bg-gradient-to-br from-card via-card to-card/95 border-primary/20 shadow-glow">
       <CardHeader>
         <CardTitle className="text-xl flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Detection Trends
+          <AlertTriangle className="w-5 h-5 text-primary" />
+          Risk Level Trends
         </CardTitle>
-        <CardDescription>Real-time analysis of transaction patterns</CardDescription>
+        <CardDescription>Real-time risk distribution over time</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={data}>
-            <defs>
-              <linearGradient id="colorAnomalies" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0.1}/>
-              </linearGradient>
-              <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-              </linearGradient>
-            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="time" 
@@ -77,21 +68,30 @@ export const AnomalyChart = ({ anomalies }: AnomalyChartProps) => {
             <Legend />
             <Area 
               type="monotone" 
-              dataKey="anomalies" 
+              dataKey="high" 
+              stackId="1"
               stroke="hsl(var(--destructive))" 
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorAnomalies)"
-              name="Anomalies"
+              fill="hsl(var(--destructive))"
+              fillOpacity={0.6}
+              name="High Risk"
             />
             <Area 
               type="monotone" 
-              dataKey="normal" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorNormal)"
-              name="Normal"
+              dataKey="medium" 
+              stackId="1"
+              stroke="hsl(var(--chart-2))" 
+              fill="hsl(var(--chart-2))"
+              fillOpacity={0.6}
+              name="Medium Risk"
+            />
+            <Area 
+              type="monotone" 
+              dataKey="low" 
+              stackId="1"
+              stroke="hsl(var(--chart-3))" 
+              fill="hsl(var(--chart-3))"
+              fillOpacity={0.6}
+              name="Low Risk"
             />
           </AreaChart>
         </ResponsiveContainer>

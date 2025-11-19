@@ -6,6 +6,9 @@ import { AnomalyTable } from "@/components/AnomalyTable";
 import { FeatureAnalysis } from "@/components/FeatureAnalysis";
 import { AttackClassification } from "@/components/AttackClassification";
 import { RealTimeMonitor } from "@/components/RealTimeMonitor";
+import { AttackDistributionChart } from "@/components/AttackDistributionChart";
+import { FeatureComparisonChart } from "@/components/FeatureComparisonChart";
+import { RiskTrendChart } from "@/components/RiskTrendChart";
 import { Shield, AlertTriangle, Activity, TrendingUp } from "lucide-react";
 import { 
   MLDetectionEngine, 
@@ -160,6 +163,13 @@ const Index = () => {
           />
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RiskTrendChart anomalies={anomalies} />
+          </div>
+          <AttackDistributionChart anomalies={anomalies} />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AttackClassification anomalies={anomalies} />
           {latestAnomaly && (
@@ -170,7 +180,14 @@ const Index = () => {
           )}
         </div>
 
-        <AnomalyTable anomalies={anomalies} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {latestAnomaly && (
+            <FeatureComparisonChart features={latestAnomaly.features} />
+          )}
+          <div className="lg:col-span-1">
+            <AnomalyTable anomalies={anomalies} />
+          </div>
+        </div>
       </div>
     </div>
   );
