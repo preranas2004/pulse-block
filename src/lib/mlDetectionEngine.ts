@@ -1,5 +1,5 @@
 import { Matrix } from 'ml-matrix';
-const mlKmeans = require('ml-kmeans');
+import { kmeans } from 'ml-kmeans';
 
 // Feature interface based on the research paper
 export interface BlockchainFeatures {
@@ -145,7 +145,7 @@ export class MLDetectionEngine {
     // Stage 2: Cluster outliers using K-Means (k=3 for 3 attack types)
     if (outliers.length >= 3) {
       const outlierData = outliers.map(o => o.data);
-      const clusters = mlKmeans(outlierData, 3, {
+      const clusters = kmeans(outlierData, 3, {
         initialization: 'kmeans++',
         maxIterations: 100
       });
